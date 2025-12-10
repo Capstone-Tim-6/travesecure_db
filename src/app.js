@@ -1,18 +1,19 @@
 // src/app.js
 const express = require('express');
 const cors = require('cors');
-// const routes = require('./routes'); // contoh, sesuaikan
 
 const app = express();
 
-// middleware
 app.use(cors());
 app.use(express.json());
 
-// routes utamamu
-// app.use('/api', routes);
-app.get('/', (req, res) => {
-  res.json({ message: 'TravSecure API running' });
+// Endpoint test untuk Vercel
+app.get('/api', (req, res) => {
+  res.json({ message: 'TravSecure API from Vercel is running' });
 });
+
+// TODO: di bawah sini nanti kamu pasang semua routes asli kamu
+// app.use('/api/auth', authRoutes);
+// app.use('/api/users', userRoutes);
 
 module.exports = app;
