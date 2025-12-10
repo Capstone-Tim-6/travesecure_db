@@ -1,0 +1,37 @@
+{
+  "name": "travsecure-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js",
+    "migrate": "node-pg-migrate",
+    "migrate:create": "npm run migrate create",
+    "db:seed": "node db/seed.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "node-pg-migrate": "^7.5.2",
+    "nodemailer": "^7.0.11",
+    "pg": "^8.16.3",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  },
+  "node-pg-migrate": {
+    "migration-file-language": "js",
+    "migrations-dir": "db/migrations",
+    "direction": "up",
+    "check-order": true
+  }
+}

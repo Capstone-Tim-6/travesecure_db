@@ -1,0 +1,1137 @@
+openapi: 3.0.0
+info:
+  title: TravSecure API
+  version: 1.0.0
+  description: API documentation for the TravSecure backend application.
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Destinations
+    description: Operations about destinations
+  - name: Incidents
+    description: Operations about incidents
+  - name: Reviews
+    description: Operations about reviews
+  - name: Gallery
+    description: Operations about destination galleries
+  - name: Notifications
+    description: User notification subscriptions
+  - name: Security Factors
+    description: Operations about security factors
+
+paths:
+  /auth/signup:
+    post:
+      summary: Register a new user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSignUp'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '500':
+          description: Server error
+
+  /auth/login:
+    post:
+      summary: Log in a user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+      responses:
+        '200':
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT authentication token
+        '400':
+          description: Invalid credentials
+        '500':
+          description: Server error
+
+  /auth/forgot-password:
+    post:
+      summary: Request a password reset OTP
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: 'user@travsecure.com'
+      responses:
+        '200':
+          description: If a user exists, an OTP has been sent to their email.
+        '500':
+          description: Server error
+
+  /auth/verify-otp:
+    post:
+      summary: Verify password reset OTP
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - otp
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: 'user@travsecure.com'
+                otp:
+                  type: string
+                  example: 'A1B2C'
+      responses:
+        '200':
+          description: OTP verified successfully.
+        '400':
+          description: OTP is invalid or has expired.
+        '500':
+          description: Server error
+
+  /auth/reset-password:
+    post:
+      summary: Reset password after OTP verification
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - otp
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: 'user@travsecure.com'
+                otp:
+                  type: string
+                  description: The OTP that was successfully verified.
+                  example: 'A1B2C'
+                password:
+                  type: string
+                  format: password
+                  example: 'newStrongPassword123'
+      responses:
+        '200':
+          description: Password has been reset successfully
+        '400':
+          description: OTP is invalid or has expired. Please try again.
+        '500':
+          description: Server error
+
+  /destinations:
+    get:
+      summary: Get all destinations with optional search and incident filters
+      tags:
+        - Destinations
+      parameters:
+        - name: search
+          in: query
+          description: Search term for destination name or area
+          schema:
+            type: string
+        - name: incident_type
+          in: query
+          description: Filter by incident type
+          schema:
+            type: string
+        - name: affected_area
+          in: query
+          description: Filter by incident affected area
+          schema:
+            type: string
+        - name: severity_level
+          in: query
+          description: Filter by incident severity level
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of destinations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Destination'
+        '500':
+          description: Server error
+    post:
+      summary: Create a new destination and add to gallery (Admin only)
+      tags:
+        - Destinations
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                address:
+                  type: string
+                description:
+                  type: string
+                coordinate_lat:
+                  type: number
+                coordinate_lon:
+                  type: number
+                surabaya_area:
+                  type: string
+                gallery_media:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                incidents:
+                  type: string
+                  description: JSON stringified array of incident objects to create.
+                  example: '[{"incident_type":"Theft","severity_level":"High","detail_description":"Stolen wallet"}]'
+      responses:
+        '201':
+          description: Destination created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Destination'
+        '403':
+          description: Forbidden - Admin role required
+        '500':
+          description: Server error
+
+  /destinations/{id}:
+    get:
+      summary: Get a destination by ID
+      tags:
+        - Destinations
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Destination data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Destination'
+        '404':
+          description: Destination not found
+        '500':
+          description: Server error
+    put:
+      summary: Update a destination and add to gallery (Admin only)
+      tags:
+        - Destinations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                address:
+                  type: string
+                description:
+                  type: string
+                coordinate_lat:
+                  type: number
+                coordinate_lon:
+                  type: number
+                surabaya_area:
+                  type: string
+                gallery_media:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                incidents:
+                  type: string
+                  description: JSON stringified array of new incident objects to create and associate.
+                  example: '[{"incident_type":"Vandalism","severity_level":"Medium","detail_description":"Graffiti on wall"}]'
+      responses:
+        '200':
+          description: Destination updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Destination'
+        '403':
+          description: Forbidden - Admin role required
+        '404':
+          description: Destination not found
+        '500':
+          description: Server error
+    delete:
+      summary: Delete a destination (Admin only)
+      tags:
+        - Destinations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Destination deleted successfully
+        '403':
+          description: Forbidden - Admin role required
+        '404':
+          description: Destination not found
+        '500':
+          description: Server error
+
+  /destinations/{id}/incidents:
+    get:
+      summary: Get incidents for a specific destination with filters
+      tags:
+        - Destinations
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: incident_type
+          in: query
+          schema:
+            type: string
+        - name: affected_area:
+          in: query
+          schema:
+            type: string
+        - name: severity_level:
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of incidents for the destination
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Incident'
+        '500':
+          description: Server error
+
+  /destinations/{id}/security-factors:
+    get:
+      summary: Get security factors for a destination
+      tags:
+        - Destinations
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A list of security factors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SecurityFactor'
+        '500':
+          description: Server error
+
+  /destinations/{id}/security-factors/{factor_id}:
+    post:
+      summary: Add a security factor to a destination (Admin only)
+      tags:
+        - Destinations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: factor_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Security factor added to destination successfully
+        '403':
+          description: Forbidden - Admin role required
+        '409':
+          description: Security factor already exists for this destination
+        '500':
+          description: Server error
+    delete:
+      summary: Remove a security factor from a destination (Admin only)
+      tags:
+        - Destinations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: factor_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Security factor removed from destination successfully
+        '403':
+          description: Forbidden - Admin role required
+        '500':
+          description: Server error
+
+  /destinations/{destination_id}/reviews:
+    get:
+      summary: Get reviews for a destination
+      tags:
+        - Reviews
+      parameters:
+        - name: destination_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A list of reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+        '500':
+          description: Server error
+    post:
+      summary: Create a review for a destination
+      tags:
+        - Reviews
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: destination_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewInput'
+      responses:
+        '201':
+          description: Review created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '500':
+          description: Server error
+
+  /destinations/{destination_id}/gallery:
+    get:
+      summary: Get all gallery items for a destination
+      tags:
+        - Gallery
+      parameters:
+        - name: destination_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A list of gallery items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GalleryItem'
+        '500':
+          description: Server error
+    post:
+      summary: Add a new item to the gallery (Admin only)
+      tags:
+        - Gallery
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: destination_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                media:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Gallery item added successfully
+        '403':
+          description: Forbidden - Admin role required
+        '500':
+          description: Server error
+
+  /destinations/{destination_id}/gallery/{gallery_id}:
+    delete:
+      summary: Delete a gallery item (Admin only)
+      tags:
+        - Gallery
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: destination_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: gallery_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Gallery item deleted successfully
+        '403':
+          description: Forbidden - Admin role required
+        '404':
+          description: Gallery item not found
+        '500':
+          description: Server error
+
+  /incidents:
+    get:
+      summary: Get all incidents with optional filters
+      tags:
+        - Incidents
+      parameters:
+        - name: incident_type
+          in: query
+          schema:
+            type: string
+        - name: affected_area:
+          in: query
+          schema:
+            type: string
+        - name: severity_level:
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of incidents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Incident'
+        '500':
+          description: Server error
+    post:
+      summary: Report a new incident
+      tags:
+        - Incidents
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                destination_id:
+                  type: integer
+                incident_type:
+                  type: string
+                severity_level:
+                  type: string
+                affected_area:
+                  type: string
+                detail_description:
+                  type: string
+                incident_date:
+                  type: string
+                  format: date-time
+                incident_rating:
+                  type: integer
+                  description: Rating from 1 to 5
+                media:
+                  type: string
+                  format: binary
+                  description: Image or video file
+      responses:
+        '201':
+          description: Incident reported successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '500':
+          description: Server error
+
+  /incidents/{id}:
+    get:
+      summary: Get an incident by ID
+      tags:
+        - Incidents
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Incident data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '404':
+          description: Incident not found
+        '500':
+          description: Server error
+    put:
+      summary: Update an incident (Admin only)
+      tags:
+        - Incidents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentInput'
+      responses:
+        '200':
+          description: Incident updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '403':
+          description: Forbidden - Admin role required
+        '404':
+          description: Incident not found
+        '500':
+          description: Server error
+    delete:
+      summary: Delete an incident (Admin only)
+      tags:
+        - Incidents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Incident deleted successfully
+        '403':
+          description: Forbidden - Admin role required
+        '404':
+          description: Incident not found
+        '500':
+          description: Server error
+
+  /notifications/subscribe:
+    post:
+      summary: Subscribe to a notification
+      tags:
+        - Notifications
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationSubscriptionInput'
+      responses:
+        '201':
+          description: Subscription created successfully
+        '400':
+          description: Bad request, missing required fields
+        '401':
+          description: Unauthorized, token is missing or invalid
+        '409':
+          description: Already subscribed to this notification
+        '500':
+          description: Server error
+
+  /security-factors:
+    get:
+      summary: Get all security factors
+      tags:
+        - Security Factors
+      responses:
+        '200':
+          description: A list of security factors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SecurityFactor'
+        '500':
+          description: Server error
+    post:
+      summary: Create a new security factor (Admin only)
+      tags:
+        - Security Factors
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecurityFactorInput'
+      responses:
+        '201':
+          description: Security factor created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityFactor'
+        '403':
+          description: Forbidden - Admin role required
+        '500':
+          description: Server error
+
+  /security-factors/{id}:
+    get:
+      summary: Get a security factor by ID
+      tags:
+        - Security Factors
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Security factor data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityFactor'
+        '404':
+          description: Security factor not found
+        '500':
+          description: Server error
+    put:
+      summary: Update a security factor (Admin only)
+      tags:
+        - Security Factors
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecurityFactorInput'
+      responses:
+        '200':
+          description: Security factor updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityFactor'
+        '403':
+          description: Forbidden - Admin role required
+        '404':
+          description: Security factor not found
+        '500':
+          description: Server error
+    delete:
+      summary: Delete a security factor (Admin only)
+      tags:
+        - Security Factors
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Security factor deleted successfully
+        '403':
+          description: Forbidden - Admin role required
+        '404':
+          description: Security factor not found
+        '500':
+          description: Server error
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    UserSignUp:
+      type: object
+      required:
+        - first_name
+        - email
+        - password
+      properties:
+        first_name:
+          type: string
+          example: John
+        last_name:
+          type: string
+          example: Doe
+        email:
+          type: string
+          format: email
+          example: user@travsecure.com
+        password:
+          type: string
+          format: password
+          example: password123
+    UserLogin:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@travsecure.com
+        password:
+          type: string
+          format: password
+          example: password123
+    User:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [user, admin]
+        registration_date:
+          type: string
+          format: date-time
+        is_active:
+          type: boolean
+    Destination:
+      type: object
+      properties:
+        destination_id:
+          type: integer
+        name:
+          type: string
+        address:
+          type: string
+        description:
+          type: string
+        coordinate_lat:
+          type: number
+          format: float
+        coordinate_lon:
+          type: number
+          format: float
+        surabaya_area:
+          type: string
+        avg_security_score:
+          type: number
+          format: float
+          description: Calculated average security score based on incident ratings and review security ratings.
+        incidents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Incident'
+        gallery:
+          type: array
+          items:
+            $ref: '#/components/schemas/GalleryItem'
+    DestinationInput:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        description:
+          type: string
+        coordinate_lat:
+          type: number
+          format: float
+        coordinate_lon:
+          type: number
+          format: float
+        surabaya_area:
+          type: string
+    DestinationIncidentInput:
+      type: object
+      properties:
+        incident_type:
+          type: string
+        severity_level:
+          type: string
+        affected_area:
+          type: string
+        detail_description:
+          type: string
+        incident_date:
+          type: string
+          format: date-time
+        incident_rating:
+          type: integer
+    SecurityFactor:
+      type: object
+      properties:
+        factor_id:
+          type: integer
+        factor_type:
+          type: string
+        risk_level:
+          type: string
+        factor_description:
+          type: string
+        updated_date:
+          type: string
+          format: date
+    SecurityFactorInput:
+      type: object
+      required:
+        - factor_type
+        - risk_level
+        - factor_description
+      properties:
+        factor_type:
+          type: string
+        risk_level:
+          type: string
+        factor_description:
+          type: string
+
+    SecurityFactorInput:
+      type: object
+      required:
+        - factor_type
+        - risk_level
+        - factor_description
+      properties:
+        factor_type:
+          type: string
+        risk_level:
+          type: string
+        factor_description:
+          type: string
+    Review:
+      type: object
+      properties:
+        review_id:
+          type: integer
+        user_id:
+          type: integer
+        destination_id:
+          type: integer
+        security_rating:
+          type: integer
+        comment:
+          type: string
+        is_like:
+          type: boolean
+        review_date:
+          type: string
+          format: date-time
+    ReviewInput:
+      type: object
+      properties:
+        security_rating:
+          type: integer
+        comment:
+          type: string
+        is_like:
+          type: boolean
+    Incident:
+      type: object
+      properties:
+        incident_id:
+          type: integer
+        user_id:
+          type: integer
+        destination_id:
+          type: integer
+        incident_type:
+          type: string
+        severity_level:
+          type: string
+        affected_area:
+          type: string
+        detail_description:
+          type: string
+        incident_date:
+          type: string
+          format: date-time
+        report_date:
+          type: string
+          format: date-time
+        is_verified:
+          type: boolean
+        incident_rating:
+          type: integer
+    IncidentInput:
+      type: object
+      properties:
+        destination_id:
+          type: integer
+        incident_type:
+          type: string
+        severity_level:
+          type: string
+        affected_area:
+          type: string
+        detail_description:
+          type: string
+        incident_date:
+          type: string
+          format: date-time
+        incident_rating:
+          type: integer
+    GalleryItem:
+      type: object
+      properties:
+        gallery_id:
+          type: integer
+        destination_id:
+          type: integer
+        media_url:
+          type: string
+        media_type:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+  
+    NotificationSubscriptionInput:
+      type: object
+      required:
+        - surabaya_area
+        - incident_type
+      properties:
+        surabaya_area:
+          type: string
+          example: "Surabaya Pusat"
+        incident_type:
+          type: string
+          example: "Theft"
