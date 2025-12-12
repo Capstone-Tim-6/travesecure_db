@@ -1,33 +1,27 @@
-
 console.log("APP.JS DIMUAT...");
 
-// src/app.js
 const express = require('express');
 const cors = require('cors');
 const YAML = require('yamljs');
 const path = require('path');
 
-
-
 const app = express();
-// ===== MIDDLEWARE =====
+
+/* ===== MIDDLEWARE ===== */
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(express.static(path.join(process.cwd(), 'public')));
+/* ===== SWAGGER SPEC ONLY ===== */
+const swaggerDocument = YAML.load(
+  path.join(process.cwd(), 'swagger.yaml')
+);
 
-// ===== SWAGGER =====
-const swaggerDocument = YAML.load(path.join(process.cwd(), 'swagger.yaml'));
-
-// endpoint spec
 app.get('/api-docs.json', (req, res) => {
   res.json(swaggerDocument);
 });
 
-
-
-// ===== ROUTES IMPORTS (path tanpa "src") =====
+/* ===== ROUTES ===== */
 const authRoutes = require('./routes/auth');
 const destinationRoutes = require('./routes/destinations');
 const securityRoutes = require('./routes/security');
@@ -38,22 +32,20 @@ const galleryRoutes = require('./routes/gallery');
 const notificationRoutes = require('./routes/notifications');
 const securityFactorsRoutes = require('./routes/securityFactors');
 
-// ===== MAIN ROUTES =====
 app.use('/api/auth', authRoutes);
 app.use('/api/destinations', destinationRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/security-factors', securityFactorsRoutes);
-app.use('/api/destinations/:id/security-factors',securityRoutes);
+app.use('/api/destinations/:id/security-factors', securityRoutes);
 
 destinationRoutes.use('/:destination_id/reviews', reviewRoutes);
 destinationRoutes.use('/:id/incidents', destinationIncidentRoutes);
 destinationRoutes.use('/:destination_id/gallery', galleryRoutes);
 
-// ===== HEALTHCHECK ROUTE =====
+/* ===== HEALTH CHECK ===== */
 app.get('/api', (req, res) => {
   res.json({ message: 'TravSecure API is running!' });
 });
 
-// Jangan ada app.listen di sini
 module.exports = app;
