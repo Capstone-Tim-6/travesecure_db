@@ -26,22 +26,21 @@ const securityFactorsRoutes = require('./routes/securityFactors');
 // ===== SWAGGER =====
 const swaggerDocument = YAML.load(path.join(process.cwd(), 'swagger.yaml'));
 
-// spec JSON (punyamu sudah oke)
+// spec endpoint
 app.get('/api-docs.json', (req, res) => {
   res.json(swaggerDocument);
 });
 
-// Swagger UI + serve asset (INI YANG FIX)
+// swagger UI (ambil spec dari URL)
 app.use(
   '/api-docs',
   swaggerUi.serveFiles(swaggerDocument),
-  swaggerUi.setup(swaggerDocument, {
+  swaggerUi.setup(null, {
     swaggerOptions: {
       url: '/api-docs.json'
     }
   })
 );
-
 
 // ===== MIDDLEWARE =====
 app.use(cors());
