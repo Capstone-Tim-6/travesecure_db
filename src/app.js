@@ -10,6 +10,11 @@ const path = require('path');
 
 
 const app = express();
+// ===== MIDDLEWARE =====
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 
 
 // ===== ROUTES IMPORTS (path tanpa "src") =====
@@ -31,19 +36,14 @@ app.get('/api-docs.json', (req, res) => {
   res.json(swaggerDocument);
 });
 
-// swagger UI + assets (SATU PINTU)
+// swagger UI + assets (PAKAI serveFiles)
 app.use(
   '/api-docs',
-  swaggerUi.serve,
+  swaggerUi.serveFiles(swaggerDocument),
   swaggerUi.setup(null, {
     swaggerOptions: { url: '/api-docs.json' }
   })
 );
-
-// ===== MIDDLEWARE =====
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // ===== MAIN ROUTES =====
 app.use('/api/auth', authRoutes);
