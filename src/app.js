@@ -26,19 +26,17 @@ const securityFactorsRoutes = require('./routes/securityFactors');
 // ===== SWAGGER =====
 const swaggerDocument = YAML.load(path.join(process.cwd(), 'swagger.yaml'));
 
-// spec endpoint
+// endpoint spec
 app.get('/api-docs.json', (req, res) => {
   res.json(swaggerDocument);
 });
 
-// swagger UI (ambil spec dari URL)
+// swagger UI + assets (SATU PINTU)
 app.use(
   '/api-docs',
-  swaggerUi.serveFiles(swaggerDocument),
+  swaggerUi.serve,
   swaggerUi.setup(null, {
-    swaggerOptions: {
-      url: '/api-docs.json'
-    }
+    swaggerOptions: { url: '/api-docs.json' }
   })
 );
 
