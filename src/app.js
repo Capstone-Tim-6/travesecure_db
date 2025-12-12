@@ -11,10 +11,6 @@ const path = require('path');
 
 const app = express();
 
-// ===== MIDDLEWARE =====
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // ===== ROUTES IMPORTS (path tanpa "src") =====
 const authRoutes = require('./routes/auth');
@@ -29,19 +25,28 @@ const securityFactorsRoutes = require('./routes/securityFactors');
 
 // ===== SWAGGER =====
 const swaggerDocument = YAML.load(path.join(process.cwd(), 'swagger.yaml'));
-// 1) endpoint JSON spec
+
+// spec JSON (punyamu sudah oke)
 app.get('/api-docs.json', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.send(swaggerDocument);
+  res.json(swaggerDocument);
 });
 
-// 2) swagger UI (biar dia fetch spec dari endpoint di atas)
-app.use('/api-docs', swaggerUi.serve);
-app.get('/api-docs', swaggerUi.setup(null, {
-  swaggerOptions: {
-    url: '/api-docs.json'
-  }
-}));
+// Swagger UI + serve asset (INI YANG FIX)
+app.use(
+  '/api-docs',
+  swaggerUi.serveFiles(swaggerDocument),
+  swaggerUi.setup(swaggerDocument, {
+    swaggerOptions: {
+      url: '/api-docs.json'
+    }
+  })
+);
+
+
+// ===== MIDDLEWARE =====
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ===== MAIN ROUTES =====
 app.use('/api/auth', authRoutes);
