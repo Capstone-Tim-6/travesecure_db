@@ -5,7 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon index.js",
-    "migrate": "node-pg-migrate up --envPath .env",
+    "migrate": "node-pg-migrate up -m migrations --database-url-var DATABASE_URL --envPath .env",
     "migrate:create": "npm run migrate create",
     "db:seed": "node db/seed.js"
   },
@@ -36,4 +36,5 @@
     "check-order": true
   }
 }
+
 
