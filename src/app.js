@@ -4,9 +4,9 @@ console.log("APP.JS DIMUAT...");
 // src/app.js
 const express = require('express');
 const cors = require('cors');
-const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const path = require('path');
+
 
 
 const app = express();
@@ -14,6 +14,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(express.static(path.join(process.cwd(), 'public')));
+
+// ===== SWAGGER =====
+const swaggerDocument = YAML.load(path.join(process.cwd(), 'swagger.yaml'));
+
+// endpoint spec
+app.get('/api-docs.json', (req, res) => {
+  res.json(swaggerDocument);
+});
 
 
 
@@ -27,23 +37,6 @@ const destinationIncidentRoutes = require('./routes/destinationIncidents');
 const galleryRoutes = require('./routes/gallery');
 const notificationRoutes = require('./routes/notifications');
 const securityFactorsRoutes = require('./routes/securityFactors');
-
-// ===== SWAGGER =====
-const swaggerDocument = YAML.load(path.join(process.cwd(), 'swagger.yaml'));
-
-// endpoint spec
-app.get('/api-docs.json', (req, res) => {
-  res.json(swaggerDocument);
-});
-
-// swagger UI + assets (PAKAI serveFiles)
-app.use(
-  '/api-docs',
-  swaggerUi.serveFiles(swaggerDocument),
-  swaggerUi.setup(null, {
-    swaggerOptions: { url: '/api-docs.json' }
-  })
-);
 
 // ===== MAIN ROUTES =====
 app.use('/api/auth', authRoutes);

@@ -2,8 +2,8 @@
   "version": 2,
   "builds": [{ "src": "api/index.js", "use": "@vercel/node" }],
   "routes": [
+    { "src": "/swagger(/.*)?", "dest": "/swagger/index.html" },
     { "src": "/api-docs.json", "dest": "/api/index.js" },
-    { "src": "/api-docs(/.*)?", "dest": "/api/index.js" },
     { "src": "/api(/.*)?", "dest": "/api/index.js" }
   ]
 }
