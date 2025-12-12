@@ -1,5 +1,6 @@
-const app = require('../src/app');
+require('dotenv').config();
+const app = require('./src/app');
 
-module.exports = (req, res) => {
-  return app(req, res);
-};
+// Jangan pakai app.listen!
+
+module.exports = app;
