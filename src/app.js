@@ -6,6 +6,8 @@ const express = require('express');
 const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
+const path = require('path');
+
 
 const app = express();
 
@@ -26,7 +28,7 @@ const notificationRoutes = require('./routes/notifications');
 const securityFactorsRoutes = require('./routes/securityFactors');
 
 // ===== SWAGGER =====
-const swaggerDocument = YAML.load('./swagger.yaml');
+const swaggerDocument = YAML.load(path.join(process.cwd(), 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // ===== MAIN ROUTES =====
@@ -47,12 +49,6 @@ destinationRoutes.use('/:destination_id/gallery', galleryRoutes);
 app.get('/api', (req, res) => {
   res.json({ message: 'TravSecure API is running!' });
 });
-// Healthcheck / testing endpoint
-app.get('/api', (req, res) => {
-  res.json({
-    status: 'ok',
-    message: 'TravSecure API is running from local!',
-  });
-});
+
 // Jangan ada app.listen di sini
 module.exports = app;
